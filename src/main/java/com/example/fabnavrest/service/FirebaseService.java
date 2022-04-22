@@ -1,26 +1,30 @@
 package com.example.fabnavrest.service;
 
 import com.example.fabnavrest.object.Parking;
+import com.example.fabnavrest.object.Survey;
 import com.example.fabnavrest.object.User;
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.ObjectWriter;
 import com.google.api.core.ApiFuture;
+import java.sql.Timestamp;
 import com.google.cloud.firestore.*;
 import com.google.firebase.cloud.FirestoreClient;
-import com.google.firestore.v1.Document;
-import com.google.gson.Gson;
+import com.google.firebase.database.IgnoreExtraProperties;
 import org.json.JSONException;
-import org.json.JSONObject;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.lang.reflect.Field;
 import java.util.*;
 import java.util.concurrent.ExecutionException;
+import java.util.function.BinaryOperator;
+
 
 @Service
+@IgnoreExtraProperties
 public class FirebaseService {
 
+    @Autowired
+    ParkingService parkingService;
 
 
     public String saveUserDetails(User user) throws ExecutionException, InterruptedException {
@@ -67,32 +71,12 @@ public class FirebaseService {
     public String saveParkingDetails(Parking parking) throws ExecutionException, InterruptedException, JsonProcessingException, JSONException, IllegalAccessException {
         Firestore dbFirestore = FirestoreClient.getFirestore();
         DocumentReference documentReference = dbFirestore.collection("Parking").document(parking.getId());
-        Map<String, Object> docData = convertToMap(parking);
+        Map<String, Object> docData = parkingService.convertToMap(parking);
         ApiFuture<WriteResult> collectionsApiFuture = dbFirestore.collection("Parking").document(parking.getId()).set(docData);
         return collectionsApiFuture.get().getUpdateTime().toString();
     }
 
-    public Map<String, Object> convertToMap(Parking parking) throws IllegalAccessException {
-        Map<String, Object> map = new HashMap<>();
-        for (Field field : Parking.class.getDeclaredFields()) {
-            // Skip this if you intend to access to public fields only
-            if (!field.isAccessible()) {
-                field.setAccessible(true);
-            }
-            if(field.getType().isArray()){
-                //map.put(field.getName(), Arrays.asList(field.get(parking)));
-            }else{
-                map.put(field.getName(), field.get(parking));
-            }
-            map.put("rateHistory",Arrays.asList(parking.getRateHistory()));
-            map.put("rateTimeHistory",Arrays.asList(parking.getRateTimeHistory()));
-            map.put("safetyHistory",Arrays.asList(parking.getSafetyHistory()));
-            map.put("safetyTimeHistory",Arrays.asList(parking.getSafetyTimeHistory()));
-            map.put("occupancyHistory",Arrays.asList(parking.getOccupancyHistory()));
-            map.put("occupancyTimeHistory",Arrays.asList(parking.getOccupancyTimeHistory()));
-        }
-        return map;
-    }
+
 
     public static double findDistance (double LatOne, double LatTwo, double LonOne, double LonTwo)
     {
@@ -129,7 +113,7 @@ public class FirebaseService {
         for(DocumentReference doc: docs){
             ApiFuture<DocumentSnapshot> future = doc.get();
             DocumentSnapshot document = future.get();
-            Parking p = document.toObject(Parking.class);
+            Parking p = parkingService.convertToParking(document);
             if(findDistance(lat, p.getLatitude(), lng, p.getLongitude()) < user.getRadius()){
                 if(user.getSafetyPreference() && !p.getFinalSafety()){
                     break;
@@ -145,6 +129,83 @@ public class FirebaseService {
         }
         return null;
     }
+
+
+    public String updateSurveyData(Survey survey) throws ExecutionException, InterruptedException, JSONException, JsonProcessingException, IllegalAccessException {
+        Firestore dbFirestore = FirestoreClient.getFirestore();
+        DocumentReference documentReference = dbFirestore.collection("Parking").document(survey.getParkingId());
+        ApiFuture<DocumentSnapshot> future = documentReference.get();
+        DocumentSnapshot document = future.get();
+        Parking parking = null;
+        Integer maxSize = 5;
+        if(document.exists()){
+            parking = parkingService.convertToParking(document);
+            Long[] rateHistory = parking.getRateHistory();
+            List<Long> rateList = new ArrayList<Long>(Arrays.asList(rateHistory));
+            rateList.add(survey.getRate());
+            if(rateList.size()>maxSize){
+                rateList.remove(0);
+            }
+            Long finaRate = rateList.stream()
+                    .reduce(BinaryOperator.maxBy((o1, o2) -> Collections.frequency(rateList, o1) -
+                            Collections.frequency(rateList, o2))).orElse(null);
+
+            parking.setRateHistory(rateList.toArray(new Long[0]));
+            parking.setFinalRate(finaRate);
+
+            Boolean[] safetyHistory = parking.getSafetyHistory();
+            List<Boolean> safetyList = new ArrayList<Boolean>(Arrays.asList(safetyHistory));
+            safetyList.add(survey.getSafety());
+            if(safetyList.size()>maxSize){
+                safetyList.remove(0);
+            }
+            Boolean finalSafety = safetyList.stream()
+                    .reduce(BinaryOperator.maxBy((o1, o2) -> Collections.frequency(safetyList, o1) -
+                            Collections.frequency(safetyList, o2))).orElse(null);
+
+            parking.setSafetyHistory(safetyList.toArray(new Boolean[0]));
+            parking.setFinalSafety(finalSafety);
+
+            Parking.occupancy[] occupancyHistory = parking.getOccupancyHistory();
+            List<Parking.occupancy> occupancyList = new ArrayList<Parking.occupancy>(Arrays.asList(occupancyHistory));
+            occupancyList.add(survey.getOccupancy());
+            if(occupancyList.size()>maxSize){
+                occupancyList.remove(0);
+            }
+            Parking.occupancy finalOccupancy = occupancyList.stream()
+                    .reduce(BinaryOperator.maxBy((o1, o2) -> Collections.frequency(occupancyList, o1) -
+                            Collections.frequency(occupancyList, o2))).orElse(null);
+
+            parking.setOccupancyHistory(occupancyList.toArray(new Parking.occupancy[0]));
+            parking.setFinalOccupancy(finalOccupancy);
+
+            saveParkingDetails(parking);
+            updateUserDetails(survey.getUserName());
+            return "Done";
+        }
+
+
+
+        return  "Parking Entry Not Found";
+
+    }
+
+    public String updateUserDetails(String userName) throws ExecutionException, InterruptedException {
+        User user = getUserDetails(userName);
+        Integer num = user.getCompletedSurveys();
+        if(num!=null)
+            num++;
+        user.setCompletedSurveys(num);
+        Integer maxSurvey = 10;
+        if(num!=null && num>=maxSurvey){
+            user.setEligibleForRewards(true);
+        }
+        saveUserDetails(user);
+        return  "Done";
+    }
+
+
+
 
 
 

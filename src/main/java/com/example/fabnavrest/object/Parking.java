@@ -1,8 +1,8 @@
 package com.example.fabnavrest.object;
 
+import java.sql.Timestamp;
 import com.google.type.DateTime;
 
-import java.lang.reflect.Field;
 import java.util.*;
 import java.util.List;
 
@@ -13,7 +13,7 @@ import com.fasterxml.jackson.databind.ObjectWriter;
 
 public class Parking {
 
-    private enum occupancy {
+    public enum occupancy {
         EMPTY,
         SOMEWHAT_FULL,
         HALF_FULL,
@@ -25,15 +25,15 @@ public class Parking {
     private String name;
     private Double latitude;
     private Double longitude;
-    private Integer[] rateHistory;
-    private Date[] rateTimeHistory;
-    private Integer finalRate;
+    private Long[] rateHistory;
+    //private Timestamp[] rateTimeHistory;
+    private Long finalRate;
     private boolean disability;
     private occupancy[] occupancyHistory;
-    private Date[] occupancyTimeHistory;
+    //private Timestamp[] occupancyTimeHistory;
     private occupancy finalOccupancy;
     private Boolean[] safetyHistory;
-    private Date[] safetyTimeHistory;
+    //private Timestamp[] safetyTimeHistory;
     private Boolean finalSafety;
 
     public Parking(String id, String name, Double latitude, Double longitude) {
@@ -81,27 +81,27 @@ public class Parking {
         this.longitude = longitude;
     }
 
-    public Integer[] getRateHistory() {
+    public Long[] getRateHistory() {
         return rateHistory;
     }
 
-    public void setRateHistory(Integer[] rateHistory) {
+    public void setRateHistory(Long[] rateHistory) {
         this.rateHistory = rateHistory;
     }
 
-    public Date[] getRateTimeHistory() {
+    /*public Timestamp[] getRateTimeHistory() {
         return rateTimeHistory;
     }
 
-    public void setRateTimeHistory(Date[] rateTimeHistory) {
+    public void setRateTimeHistory(Timestamp[] rateTimeHistory) {
         this.rateTimeHistory = rateTimeHistory;
-    }
+    }*/
 
-    public Integer getFinalRate() {
+    public Long getFinalRate() {
         return finalRate;
     }
 
-    public void setFinalRate(Integer finalRate) {
+    public void setFinalRate(Long finalRate) {
         this.finalRate = finalRate;
     }
 
@@ -121,13 +121,13 @@ public class Parking {
         this.occupancyHistory = occupancyHistory;
     }
 
-    public Date[] getOccupancyTimeHistory() {
+    /*public Timestamp[] getOccupancyTimeHistory() {
         return occupancyTimeHistory;
     }
 
-    public void setOccupancyTimeHistory(Date[] occupancyTimeHistory) {
+    public void setOccupancyTimeHistory(Timestamp[] occupancyTimeHistory) {
         this.occupancyTimeHistory = occupancyTimeHistory;
-    }
+    }*/
 
     public occupancy getFinalOccupancy() {
         return finalOccupancy;
@@ -145,13 +145,13 @@ public class Parking {
         this.safetyHistory = safetyHistory;
     }
 
-    public Date[] getSafetyTimeHistory() {
+    /*public Timestamp[] getSafetyTimeHistory() {
         return safetyTimeHistory;
     }
 
-    public void setSafetyTimeHistory(Date[] safetyTimeHistory) {
+    public void setSafetyTimeHistory(Timestamp[] safetyTimeHistory) {
         this.safetyTimeHistory = safetyTimeHistory;
-    }
+    }*/
 
     public Boolean getFinalSafety() {
         return finalSafety;
