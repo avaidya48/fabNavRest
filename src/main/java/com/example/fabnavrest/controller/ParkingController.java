@@ -31,4 +31,9 @@ public class ParkingController {
         return firebaseService.updateSurveyData(survey);
     }
 
+    @GetMapping("/getSuggestedParking")
+    public Parking getUserDetails(@RequestHeader String userName, @RequestHeader String latitude, @RequestHeader String longitude) throws ExecutionException, InterruptedException {
+        return firebaseService.getSuggestedParking(userName, Double.parseDouble(latitude), Double.parseDouble(longitude));
+    }
+
 }

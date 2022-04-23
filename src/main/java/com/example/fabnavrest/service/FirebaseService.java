@@ -101,12 +101,12 @@ public class FirebaseService {
     }
 
     public Parking getSuggestedParking(String userName, Double lat, Double lng) throws ExecutionException, InterruptedException {
-        Map<String,Integer> occupancyMap = new HashMap<>();
-        occupancyMap.put("EMPTY",4);
-        occupancyMap.put("SOMEWHAT_FULL",3);
-        occupancyMap.put("HALF_FULL",2);
-        occupancyMap.put("ALMOST_FULL",1);
-        occupancyMap.put("FULL",0);
+        Map<Parking.occupancy,Integer> occupancyMap = new HashMap<>();
+        occupancyMap.put(Parking.occupancy.valueOf("EMPTY"),4);
+        occupancyMap.put(Parking.occupancy.valueOf("SOMEWHAT_FULL"),3);
+        occupancyMap.put(Parking.occupancy.valueOf("HALF_FULL"),2);
+        occupancyMap.put(Parking.occupancy.valueOf("ALMOST_FULL"),1);
+        occupancyMap.put(Parking.occupancy.valueOf("FULL"),0);
         Firestore dbFirestore = FirestoreClient.getFirestore();
         Iterable<DocumentReference> docs = dbFirestore.collection("Parking").listDocuments();
         User user = getUserDetails(userName);

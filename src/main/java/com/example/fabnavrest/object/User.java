@@ -16,7 +16,7 @@ public class User {
     private Integer paymentMax;
     private Boolean disabilityFriendly;
     private Integer radius;
-    private occupancy occupancyPreference;
+    private Parking.occupancy occupancyPreference;
     private Boolean safetyPreference;
     private Integer completedSurveys;
     private Boolean eligibleForRewards;
@@ -67,11 +67,11 @@ public class User {
         return radius;
     }
 
-    public occupancy getOccupancyPreference() {
+    public Parking.occupancy getOccupancyPreference() {
         return occupancyPreference;
     }
 
-    public void setOccupancyPreference(occupancy occupancyPreference) {
+    public void setOccupancyPreference(Parking.occupancy occupancyPreference) {
         this.occupancyPreference = occupancyPreference;
     }
 
