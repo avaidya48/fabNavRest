@@ -108,26 +108,33 @@ public class FirebaseService {
         occupancyMap.put(Parking.occupancy.valueOf("ALMOST_FULL"),1);
         occupancyMap.put(Parking.occupancy.valueOf("FULL"),0);
         Firestore dbFirestore = FirestoreClient.getFirestore();
-        Iterable<DocumentReference> docs = dbFirestore.collection("Parking").listDocuments();
+
+        ApiFuture<QuerySnapshot> future = dbFirestore.collection("Parking").get();
+        List<QueryDocumentSnapshot> documents = future.get().getDocuments();
         User user = getUserDetails(userName);
-        for(DocumentReference doc: docs){
-            ApiFuture<DocumentSnapshot> future = doc.get();
-            DocumentSnapshot document = future.get();
+        for (QueryDocumentSnapshot document : documents) {
             Parking p = parkingService.convertToParking(document);
             if(findDistance(lat, p.getLatitude(), lng, p.getLongitude()) < user.getRadius()){
                 if(user.getSafetyPreference() && !p.getFinalSafety()){
-                    break;
+                    continue;
                 }
                 if(user.getPaymentMax() < p.getFinalRate()){
-                    break;
+                    continue;
                 }
                 if(occupancyMap.get(p.getFinalOccupancy()) < occupancyMap.get(user.getOccupancyPreference())){
-                    break;
+                    continue;
                 }
                 return p;
             }
         }
         return null;
+
+        /*Iterable<DocumentReference> docs = dbFirestore.collection("Parking").listDocuments();
+        User user = getUserDetails(userName);
+        for(DocumentReference doc: docs){
+
+        }
+        return null;*/
     }
 
 
